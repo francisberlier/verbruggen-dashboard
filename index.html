@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Verbruggen — Suivi des chantiers</title>
+<style>
+:root {
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --border: #e2e8f0;
+  --txt: #1e293b;
+  --txt2: #64748b;
+  --txt3: #94a3b8;
+  --primary: #2a5438;
+  --primary2: #3d7a50;
+  --accent: #3030a0;
+  --green: #16a34a;
+  --orange: #f59e0b;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ===== Login ===== */
+#login-screen {
+  position: fixed; inset: 0;
+  background: linear-gradient(135deg, #2a5438 0%, #1e3a28 100%);
+  display: none; align-items: center; justify-content: center;
+  z-index: 100;
+}
+#login-screen.show { display: flex; }
+.login-card {
+  background: white; padding: 36px 40px; border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  max-width: 380px; width: 90%;
+}
+.login-card h1 {
+  font-size: 22px; margin-bottom: 4px; color: var(--primary);
+}
+.login-card .sub {
+  font-size: 12.5px; color: var(--txt2); margin-bottom: 22px;
+}
+.login-card input {
+  width: 100%; padding: 11px 13px; margin-bottom: 10px;
+  border: 1px solid var(--border); border-radius: 7px;
+  font-size: 14px; font-family: inherit;
+}
+.login-card input:focus { outline: none; border-color: var(--primary); }
+.login-card button {
+  width: 100%; padding: 12px; background: var(--primary); color: white;
+  border: none; border-radius: 7px; font-size: 15px; font-weight: 500;
+  cursor: pointer; margin-top: 4px; font-family: inherit;
+}
+.login-card button:hover { background: var(--primary2); }
+.login-card button:disabled { opacity: 0.6; cursor: wait; }
+#login-error {
+  color: var(--red); font-size: 12px; min-height: 18px; margin-top: 4px;
+}
+
+/* ===== Header ===== */
+header {
+  background: white; border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+header h1 {
+  font-size: 18px; font-weight: 600; color: var(--primary); flex: 1;
+}
+.user-info {
+  font-size: 12.5px; color: var(--txt2);
+}
+.btn {
+  padding: 7px 14px; border-radius: 6px; font-size: 13px;
+  font-family: inherit; cursor: pointer; border: 1px solid var(--border);
+  background: white; color: var(--txt);
+}
+.btn:hover { background: var(--bg); }
+.btn-primary {
+  background: var(--primary); color: white; border-color: var(--primary);
+}
+.btn-primary:hover { background: var(--primary2); }
+
+/* ===== Main ===== */
+main {
+  max-width: 1400px; margin: 0 auto; padding: 20px 24px;
+}
+
+/* ===== KPI Cards ===== */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.kpi {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow);
+}
+.kpi .lbl {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--txt2); margin-bottom: 6px;
+}
+.kpi .val {
+  font-size: 22px; font-weight: 600; color: var(--txt);
+}
+.kpi .sub {
+  font-size: 11.5px; color: var(--txt3); margin-top: 2px;
+}
+
+/* ===== Filtres ===== */
+.filters {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  box-shadow: var(--shadow);
+}
+.filter-grp {
+  display: flex; gap: 6px; align-items: center;
+}
+.filter-grp label {
+  font-size: 12px; color: var(--txt2); font-weight: 500;
+}
+.filter-grp select, .filter-grp input {
+  padding: 5px 9px; border: 1px solid var(--border); border-radius: 5px;
+  font-size: 13px; font-family: inherit; background: white;
+}
+
+/* ===== Tableau ===== */
+.table-wrap {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden; box-shadow: var(--shadow);
+}
+table {
+  width: 100%; border-collapse: collapse;
+}
+thead {
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+thead th {
+  text-align: left; padding: 10px 12px; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--txt2); font-weight: 600; white-space: nowrap;
+}
+thead th.r { text-align: right; }
+thead th.c { text-align: center; }
+tbody td {
+  padding: 9px 12px; border-bottom: 1px solid var(--border);
+  font-size: 13px; vertical-align: middle;
+}
+tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+tbody td.c { text-align: center; }
+tbody tr:hover { background: #f8fafc; }
+tbody tr:last-child td { border-bottom: none; }
+.ref { font-weight: 600; color: var(--primary); }
+.client { color: var(--txt2); font-size: 12.5px; }
+.muted { color: var(--txt3); }
+
+/* Badges statut */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.b-calculation { background: #dbeafe; color: #1d4ed8; }
+.b-envoye { background: #fef3c7; color: #92400e; }
+.b-accepte { background: #d1fae5; color: #065f46; }
+.b-production { background: #ede9fe; color: #6d28d9; }
+.b-reception { background: #cffafe; color: #155e75; }
+.b-termine { background: #e5e7eb; color: #374151; }
+.b-refuse { background: #fee2e2; color: #991b1b; }
+
+/* Cellules d'écart */
+.ecart-pos { color: var(--red); font-weight: 600; }
+.ecart-neg { color: var(--green); font-weight: 600; }
+.ecart-neutre { color: var(--txt2); }
+
+/* Empty state */
+.empty {
+  padding: 60px 20px; text-align: center; color: var(--txt2);
+}
+.empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+/* Loading */
+.loading {
+  padding: 60px 20px; text-align: center; color: var(--txt2);
+}
+.spin {
+  display: inline-block; width: 36px; height: 36px;
+  border: 3px solid var(--border); border-top-color: var(--primary);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin-bottom: 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Footer */
+footer {
+  text-align: center; padding: 18px; font-size: 11.5px; color: var(--txt3);
+}
+footer a { color: var(--accent); text-decoration: none; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  header { padding: 12px 14px; }
+  header h1 { font-size: 15px; }
+  main { padding: 14px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi .val { font-size: 18px; }
+  thead th:nth-child(3), tbody td:nth-child(3),
+  thead th:nth-child(5), tbody td:nth-child(5) { display: none; }
+}
+
+/* Vue détaillée (modal) */
+#detail-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: none; align-items: center; justify-content: center; z-index: 200;
+  padding: 20px;
+}
+#detail-overlay.show { display: flex; }
+.detail-card {
+  background: white; border-radius: 12px; padding: 24px 28px;
+  max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.detail-card h2 {
+  font-size: 18px; color: var(--primary); margin-bottom: 4px;
+}
+.detail-card .close-x {
+  float: right; background: none; border: none; font-size: 22px;
+  cursor: pointer; color: var(--txt2); padding: 0; line-height: 1;
+}
+.detail-section {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.detail-section h3 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--txt2); margin-bottom: 8px;
+}
+.detail-row {
+  display: flex; justify-content: space-between;
+  padding: 4px 0; font-size: 13px;
+}
+.detail-row .lbl { color: var(--txt2); }
+.detail-row .val { font-weight: 500; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🏗️ Dashboard Verbruggen</h1>
+    <p class="sub">Connectez-vous pour accéder au tableau de bord</p>
+    <input id="login-email" type="email" placeholder="Email" autocomplete="email">
+    <input id="login-password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+    <div id="login-error"></div>
+    <button onclick="doLogin()" id="login-btn">Se connecter</button>
+  </div>
+</div>
+
+<!-- ========== APP ========== -->
+<header>
+  <h1>🏗️ Dashboard Verbruggen</h1>
+  <span class="user-info" id="user-info"></span>
+  <button class="btn" onclick="loadAll()" title="Recharger les données">🔄 Actualiser</button>
+  <button class="btn" onclick="doLogout()" title="Se déconnecter">⏻ Quitter</button>
+</header>
+
+<main>
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Filtres -->
+  <div class="filters">
+    <div class="filter-grp">
+      <label>Statut :</label>
+      <select id="f-statut">
+        <option value="all">Tous</option>
+        <option value="calculation">En calculation</option>
+        <option value="envoye">Envoyé</option>
+        <option value="accepte">Accepté</option>
+        <option value="production">En production</option>
+        <option value="reception">En réception</option>
+        <option value="termine">Terminé</option>
+        <option value="refuse">Refusé</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Année :</label>
+      <select id="f-annee">
+        <option value="all">Toutes</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Recherche :</label>
+      <input id="f-search" type="text" placeholder="ref ou client..." style="width:160px">
+    </div>
+    <div style="flex:1"></div>
+    <span style="font-size:11.5px;color:var(--txt2)" id="count-info"></span>
+  </div>
+
+  <!-- Tableau principal -->
+  <div class="table-wrap">
+    <div id="loading" class="loading">
+      <div class="spin"></div>
+      <div>Chargement des chantiers...</div>
+    </div>
+    <table id="main-table" style="display:none">
+      <thead>
+        <tr>
+          <th>Réf.</th>
+          <th>Client</th>
+          <th class="c">Statut</th>
+          <th class="r">CA HT</th>
+          <th class="r" title="Heures prévues">H prévues</th>
+          <th class="r" title="Heures pointées">H pointées</th>
+          <th class="r" title="Écart (réalisé − prévu)">Écart</th>
+          <th class="r" title="% d'avancement par rapport aux heures prévues">%</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty-state" class="empty" style="display:none">
+      <div class="icon">📋</div>
+      <div>Aucun chantier ne correspond aux filtres</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Dashboard Verbruggen · Phase 1 ·
+  <a href="https://francisberlier.github.io/Planning-semaine/" target="_blank">Planning Semaine</a>
+</footer>
+
+<!-- ========== MODAL DÉTAIL CHANTIER ========== -->
+<div id="detail-overlay" onclick="if(event.target.id==='detail-overlay')closeDetail()">
+  <div class="detail-card">
+    <button class="close-x" onclick="closeDetail()">×</button>
+    <h2 id="d-title"></h2>
+    <div style="color:var(--txt2);font-size:13px" id="d-subtitle"></div>
+    <div id="d-content"></div>
+  </div>
+</div>
+
+<!-- ========== SCRIPTS ========== -->
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getDatabase, ref, get }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAuXW6oBiNPw4W4lZoLPqjpVlLLwA6rt5Q",
+  authDomain: "verbruggen-planning.firebaseapp.com",
+  databaseURL: "https://verbruggen-planning-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "verbruggen-planning",
+  storageBucket: "verbruggen-planning.firebasestorage.app",
+  messagingSenderId: "506403938885",
+  appId: "1:506403938885:web:2dccdff0b8457036c4392c"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const fs   = getFirestore(app);
+const rtdb = getDatabase(app);
+
+window.__fb = {
+  auth, fs, rtdb,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  collection, getDocs, ref, get
+};
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<script>
+// =============== ÉTAT GLOBAL ===============
+let allChantiers = []; // chantiers depuis Firestore
+let allPointages = {}; // pointages agrégés par chantier { '9227': { be:..., machines:{total,...}, atelier, ... } }
+let currentUser = null;
+let fbReady = false;
+
+// Mapping des types de pointage vers nos catégories
+const TYPE_TO_CAT = {
+  PL: 'be', E: 'be', GS: 'be', D: 'be',  // BE
+  M:  'machines',                          // Machines (total uniquement, pas de détail)
+  A:  'atelier', G: 'atelier',             // Atelier (magasin compris)
+  F:  'finition',
+  T:  'transport',
+  P:  'pose'
+  // R, CE, V, C, ML, B : exclus (non-chantier)
+};
+
+// =============== UTILS ===============
+function fE(v) { return (v||0).toLocaleString('fr-BE', { maximumFractionDigits: 0 }) + ' €'; }
+function fH(v) { return (v||0).toLocaleString('fr-BE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' h'; }
+function fPct(v) { return v == null ? '—' : (v).toLocaleString('fr-BE', { maximumFractionDigits: 0 }) + ' %'; }
+function escapeHtml(s) {
+  return String(s || '').replace(/[<>&"']/g, c =>
+    ({'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[c]));
+}
+
+// =============== AUTH ===============
+function waitForFb() {
+  return new Promise(res => {
+    if (window.__fb) return res();
+    window.addEventListener('fb-ready', res, { once: true });
+  });
+}
+
+async function init() {
+  await waitForFb();
+  fbReady = true;
+  const { auth, onAuthStateChanged } = window.__fb;
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('login-screen').classList.remove('show');
+      document.getElementById('user-info').textContent = `👤 ${user.email}`;
+      loadAll();
+    } else {
+      document.getElementById('login-screen').classList.add('show');
+    }
+  });
+}
+
+window.doLogin = async function() {
+  await waitForFb();
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!email || !pwd) { errEl.textContent = 'Email et mot de passe requis'; return; }
+  btn.disabled = true;
+  try {
+    const { auth, signInWithEmailAndPassword } = window.__fb;
+    await signInWithEmailAndPassword(auth, email, pwd);
+  } catch (e) {
+    const msg = ({
+      'auth/invalid-credential': "Email ou mot de passe incorrect",
+      'auth/wrong-password': "Mot de passe incorrect",
+      'auth/user-not-found': "Aucun compte avec cet email",
+      'auth/invalid-email': "Format d'email invalide",
+      'auth/too-many-requests': "Trop de tentatives — réessayez plus tard"
+    })[e.code] || (`Erreur : ${e.code || e.message}`);
+    errEl.textContent = msg;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+window.doLogout = async function() {
+  const { auth, signOut } = window.__fb;
+  await signOut(auth);
+};
+
+// Permettre la touche Entrée pour se connecter
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').classList.contains('show')) {
+    doLogin();
+  }
+});
+
+// =============== CHARGEMENT DES DONNÉES ===============
+window.loadAll = async function() {
+  if (!currentUser) return;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('main-table').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+
+  try {
+    await Promise.all([loadChantiers(), loadPointages()]);
+    populateYearFilter();
+    render();
+  } catch (e) {
+    console.error('[Dashboard] Erreur de chargement :', e);
+    document.getElementById('loading').innerHTML =
+      `<div style="color:var(--red)">❌ Erreur : ${e.message}</div>`;
+  }
+};
+
+async function loadChantiers() {
+  const { fs, collection, getDocs } = window.__fb;
+  const snap = await getDocs(collection(fs, 'chantiers'));
+  allChantiers = [];
+  snap.forEach(doc => {
+    const data = doc.data();
+    data._id = doc.id;
+    allChantiers.push(data);
+  });
+  console.log(`[Dashboard] ${allChantiers.length} chantiers chargés`);
+}
+
+async function loadPointages() {
+  const { rtdb, ref, get } = window.__fb;
+  allPointages = {};
+
+  // On charge les deux : production (data/pointage) et bureau (data/pointageBureau)
+  const [snapProd, snapBureau] = await Promise.all([
+    get(ref(rtdb, 'data/pointage')),
+    get(ref(rtdb, 'data/pointageBureau'))
+  ]);
+
+  if (snapProd.exists())  aggregatePointages(snapProd.val(), false);
+  if (snapBureau.exists()) aggregatePointages(snapBureau.val(), true);
+
+  console.log(`[Dashboard] Pointages agrégés sur ${Object.keys(allPointages).length} chantiers`);
+}
+
+function aggregatePointages(ptData, isBureau) {
+  // Structure : ptData[weekKey][pid][dayIndex] = { items:[], extras:[] }
+  for (const wk in ptData) {
+    const wkData = ptData[wk]; if (!wkData) continue;
+    for (const pid in wkData) {
+      const pidData = wkData[pid]; if (!pidData) continue;
+      for (const di in pidData) {
+        const day = pidData[di]; if (!day) continue;
+        const items = (day.items || []).concat(day.extras || []);
+        items.forEach(it => {
+          const num = (it.num || '').toString().trim();
+          if (!num) return; // pas de chantier rattaché
+          const cat = TYPE_TO_CAT[it.type];
+          if (!cat) return; // type exclu (R, CE, V, C, ML, B)
+          const h = parseFloat(it.h) || 0;
+          if (h <= 0) return;
+
+          if (!allPointages[num]) {
+            allPointages[num] = {
+              be: 0,
+              machines: { total: 0 },
+              atelier: 0,
+              finition: 0,
+              transport: 0,
+              pose: 0,
+              total: 0
+            };
+          }
+          const agg = allPointages[num];
+          if (cat === 'machines') agg.machines.total += h;
+          else agg[cat] += h;
+          agg.total += h;
+        });
+      }
+    }
+  }
+}
+
+// =============== AGRÉGATION & STATS PAR CHANTIER ===============
+function getStats(c) {
+  const hp = c?.totaux?.heures_prevues || c?.devis_principal?.heures_prevues || null;
+  let prevuTotal = 0;
+  if (hp) {
+    prevuTotal = (hp.be||0) + (hp.machines?.total||0) + (hp.atelier||0) +
+                 (hp.finition||0) + (hp.transport||0) + (hp.pose||0);
+  }
+  const real = allPointages[c.ref] || null;
+  const realTotal = real ? real.total : 0;
+  const ecart = realTotal - prevuTotal;
+  const pct = prevuTotal > 0 ? (realTotal / prevuTotal) * 100 : null;
+  return { prevuTotal, realTotal, ecart, pct, hp, real };
+}
+
+// =============== RENDU ===============
+function populateYearFilter() {
+  const years = new Set();
+  allChantiers.forEach(c => { if (c.annee) years.add(c.annee); });
+  const sel = document.getElementById('f-annee');
+  sel.innerHTML = '<option value="all">Toutes</option>' +
+    [...years].sort((a,b)=>b-a).map(y => `<option value="${y}">${y}</option>`).join('');
+}
+
+function filteredChantiers() {
+  const fs = document.getElementById('f-statut').value;
+  const fa = document.getElementById('f-annee').value;
+  const fr = document.getElementById('f-search').value.toLowerCase().trim();
+
+  return allChantiers.filter(c => {
+    if (fs !== 'all' && c.statut !== fs) return false;
+    if (fa !== 'all' && String(c.annee) !== fa) return false;
+    if (fr) {
+      const s = `${c.ref} ${c.client || c.description || ''}`.toLowerCase();
+      if (!s.includes(fr)) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  const list = filteredChantiers();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('count-info').textContent =
+    `${list.length} chantier${list.length>1?'s':''} sur ${allChantiers.length}`;
+
+  if (!list.length) {
+    document.getElementById('main-table').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    renderKPI([]);
+    return;
+  }
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('main-table').style.display = 'table';
+
+  // KPI
+  renderKPI(list);
+
+  // Tableau
+  const STATUT_LBL = {
+    calculation:'Calculation', envoye:'Envoyé', accepte:'Accepté',
+    production:'Production', reception:'Réception', termine:'Terminé', refuse:'Refusé'
+  };
+  list.sort((a,b) => (b.derniere_sync?.seconds||0) - (a.derniere_sync?.seconds||0));
+  document.getElementById('tbody').innerHTML = list.map(c => {
+    const st = getStats(c);
+    const ca = c?.totaux?.ca_ht || c?.devis_principal?.ca_ht || 0;
+    const ecartCls = st.ecart > 0 ? 'ecart-pos' : (st.ecart < 0 ? 'ecart-neg' : 'ecart-neutre');
+    const pctCls   = st.pct != null && st.pct > 100 ? 'ecart-pos' : 'ecart-neutre';
+    return `<tr onclick="showDetail('${escapeHtml(c._id)}')">
+      <td><span class="ref">${escapeHtml(c.ref || c._id)}</span></td>
+      <td><span class="client">${escapeHtml(c.client || c.description || '—')}</span></td>
+      <td class="c"><span class="badge b-${escapeHtml(c.statut||'calculation')}">${STATUT_LBL[c.statut]||c.statut||'—'}</span></td>
+      <td class="r">${ca ? fE(ca) : '<span class="muted">—</span>'}</td>
+      <td class="r">${st.prevuTotal ? fH(st.prevuTotal) : '<span class="muted">—</span>'}</td>
+      <td class="r">${st.realTotal ? fH(st.realTotal) : '<span class="muted">—</span>'}</td>
+      <td class="r ${ecartCls}">${st.ecart ? (st.ecart>0?'+':'')+fH(st.ecart) : '<span class="muted">—</span>'}</td>
+      <td class="r ${pctCls}">${fPct(st.pct)}</td>
+      <td class="c"><span class="muted" style="font-size:11px">›</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderKPI(list) {
+  let totalCA = 0, totalPrevu = 0, totalReal = 0, nbActifs = 0;
+  list.forEach(c => {
+    const st = getStats(c);
+    totalCA    += c?.totaux?.ca_ht || c?.devis_principal?.ca_ht || 0;
+    totalPrevu += st.prevuTotal;
+    totalReal  += st.realTotal;
+    if (c.statut === 'accepte' || c.statut === 'production') nbActifs++;
+  });
+  const ecart = totalReal - totalPrevu;
+  const pct = totalPrevu > 0 ? (totalReal / totalPrevu) * 100 : null;
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi">
+      <div class="lbl">Chantiers affichés</div>
+      <div class="val">${list.length}</div>
+      <div class="sub">${nbActifs} actif${nbActifs>1?'s':''} (Accepté + Production)</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">CA cumulé (HT)</div>
+      <div class="val">${fE(totalCA)}</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Heures prévues</div>
+      <div class="val">${fH(totalPrevu)}</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Heures pointées</div>
+      <div class="val">${fH(totalReal)}</div>
+      <div class="sub" style="color:${ecart>0?'var(--red)':ecart<0?'var(--green)':'var(--txt3)'}">
+        ${ecart > 0 ? '+' : ''}${fH(ecart)} ${pct != null ? `(${fPct(pct)})` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// =============== MODAL DÉTAIL ===============
+window.showDetail = function(id) {
+  const c = allChantiers.find(x => x._id === id);
+  if (!c) return;
+  const st = getStats(c);
+  const ca = c?.totaux?.ca_ht || c?.devis_principal?.ca_ht || 0;
+  const hp = st.hp || {};
+  const real = st.real || {};
+
+  document.getElementById('d-title').innerHTML = `${escapeHtml(c.ref)} — <span style="color:var(--txt2);font-weight:400">${escapeHtml(c.client || c.description || '')}</span>`;
+  document.getElementById('d-subtitle').innerHTML = `Statut : <span class="badge b-${escapeHtml(c.statut||'calculation')}">${c.statut||'—'}</span> · Année : ${c.annee||'—'}`;
+
+  const cats = [
+    { k:'be', lbl:'Bureau d\\'études' },
+    { k:'machines', lbl:'Machines', isObj:true },
+    { k:'atelier', lbl:'Atelier' },
+    { k:'finition', lbl:'Finition' },
+    { k:'transport', lbl:'Transport' },
+    { k:'pose', lbl:'Pose' }
+  ];
+  const catRows = cats.map(({k,lbl,isObj}) => {
+    const p = isObj ? (hp.machines?.total || 0) : (hp[k] || 0);
+    const r = isObj ? (real.machines?.total || 0) : (real[k] || 0);
+    const ec = r - p;
+    const ecCls = ec > 0 ? 'ecart-pos' : (ec < 0 ? 'ecart-neg' : 'ecart-neutre');
+    return `<div class="detail-row">
+      <span class="lbl">${lbl}</span>
+      <span class="val">${fH(p)} / ${fH(r)} <span class="${ecCls}">${ec ? (ec>0?'+':'') + ec.toFixed(1) + 'h' : '—'}</span></span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('d-content').innerHTML = `
+    <div class="detail-section">
+      <h3>Financier</h3>
+      <div class="detail-row"><span class="lbl">CA HT</span><span class="val">${fE(ca)}</span></div>
+      <div class="detail-row"><span class="lbl">Matériaux HT</span><span class="val">${fE(c?.totaux?.materiaux_ht)}</span></div>
+      <div class="detail-row"><span class="lbl">Quincaillerie HT</span><span class="val">${fE(c?.totaux?.quincaillerie_ht)}</span></div>
+      <div class="detail-row"><span class="lbl">Sous-traitance HT</span><span class="val">${fE(c?.totaux?.sous_traitance_ht)}</span></div>
+    </div>
+    <div class="detail-section">
+      <h3>Heures par catégorie (prévues / pointées)</h3>
+      ${catRows}
+      <div class="detail-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">
+        <strong class="lbl">TOTAL</strong>
+        <strong class="val">${fH(st.prevuTotal)} / ${fH(st.realTotal)}</strong>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h3>Dates</h3>
+      <div class="detail-row"><span class="lbl">Envoi prévu</span><span class="val">${c.date_envoi_prevue || '—'}</span></div>
+      <div class="detail-row"><span class="lbl">Envoi réel</span><span class="val">${c.date_envoi_reelle || '—'}</span></div>
+      <div class="detail-row"><span class="lbl">Début chantier</span><span class="val">${c.date_debut || '—'}</span></div>
+      <div class="detail-row"><span class="lbl">Fin chantier</span><span class="val">${c.date_fin || '—'}</span></div>
+    </div>
+  `;
+  document.getElementById('detail-overlay').classList.add('show');
+};
+window.closeDetail = function() {
+  document.getElementById('detail-overlay').classList.remove('show');
+};
+
+// Brancher les filtres
+['f-statut', 'f-annee', 'f-search'].forEach(id => {
+  document.getElementById(id).addEventListener(id === 'f-search' ? 'input' : 'change', render);
+});
+
+// Démarrage
+init();
+</script>
+</body>
+</html>
