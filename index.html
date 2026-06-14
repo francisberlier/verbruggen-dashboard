@@ -444,7 +444,7 @@ function renderCouts(ap, ar) {
     { lbl:'Matériaux',     p: ap.materiaux_ht,     r: ar.materiaux_ht },
     { lbl:'Quincaillerie', p: ap.quincaillerie_ht, r: ar.quincaillerie_ht },
   ];
-  if (ap.sous_traitance_ht != null) lignes.push({ lbl:'Sous-traitance', p: ap.sous_traitance_ht, r: ar.sous_traitance_ht });
+  if (ap.sous_traitance_ht != null || ar.sous_traitance_ht != null) lignes.push({ lbl:'Sous-traitance', p: ap.sous_traitance_ht, r: ar.sous_traitance_ht });
   if (ar.autres_ht) lignes.push({ lbl:'Autres (réel)', p: null, r: ar.autres_ht });
   let totP = 0, totR = 0;
   const body = lignes.map(L => {
